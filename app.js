@@ -4,10 +4,6 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
-//not generated varriables 
-
-var bodyParser = require('body-parser');
 var session = require('express-session');
 var passport = require('passport');
 var expressValidator = require('express-validator');
@@ -17,13 +13,9 @@ var upload = multer({dest: './uploads'});
 var flash = require('connect-flash');
 var mongo = require('mongodb');
 var mongoose = require('mongoose');
-
 var db = mongoose.connection;
 
-
-
-
-var index = require('./routes/index');
+var routes = require('./routes/index');
 var users = require('./routes/users');
 
 var app = express();
@@ -37,26 +29,19 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', index);
-app.use('/users', users);
-
-
-//Handel Sessions
+// Handle Sessions
 app.use(session({
-	secret:'secret',
-	saveUninitilized: true,
-	resave: true
+  secret:'secret',
+  saveUninitialized: true,
+  resave: true
 }));
 
-// Passport For Auth
+// Passport
 app.use(passport.initialize());
-app.use(passport.session);
+app.use(passport.session());
 
 // Validator
-// In this example, the formParam value is going to get morphed into form body format useful for printing.
 app.use(expressValidator({
   errorFormatter: function(param, msg, value) {
       var namespace = param.split('.')
@@ -74,13 +59,17 @@ app.use(expressValidator({
   }
 }));
 
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// express-message
-app.use(require('connect-flash')());
+app.use(flash());
 app.use(function (req, res, next) {
   res.locals.messages = require('express-messages')(req, res);
   next();
 });
+
+app.use('/', routes);
+app.use('/users', users);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -89,15 +78,29 @@ app.use(function(req, res, next) {
   next(err);
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+// error handlers
 
-  // render the error page
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+  app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('error', {
+      message: err.message,
+      error: err
+    });
+  });
+}
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
   res.status(err.status || 500);
-  res.render('error');
+  res.render('error', {
+    message: err.message,
+    error: {}
+  });
 });
+
 
 module.exports = app;
