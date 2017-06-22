@@ -26,5 +26,6 @@ html
           ul.nav.navbar-nav.navbar-right
             li
                a(href='/users/logout') Logout
-    .container
-      block content
+  .container
+    != messages()
+    block content
